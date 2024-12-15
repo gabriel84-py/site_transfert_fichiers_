@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<!-- Ajout de la fonctionnalité d'impression en accord avec node-printer du serveur -->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transfert de Fichiers</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1a1c20 0%, #2d3436 100%);
+      color: #ffffff;
+      padding: 20px;
+      line-height: 1.6;
+      min-height: 100vh;
+      margin: 0;
+      box-sizing: border-box;
+      transition: background 0.3s, color 0.3s;
+    }
+    
+    /* Styles pour le thème clair */
+    body.light-theme {
+      background: #ffffff;
+      color: #000000;
+    }
+    
+    /* Styles pour le thème sombre */
+    body.dark-theme {
+      background: linear-gradient(135deg, #1a1c20 0%, #2d3436 100%);
+      color: #ffffff;
+    }
+    
+    @media (min-width: 768px) {
+      body {
+        padding: 40px;
+      }
+    }
+    
+    h1, h2 {
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 30px;
+      background: linear-gradient(45deg, #00f2fe, #4facfe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: glow 2s ease-in-out infinite alternate;
+      padding: 0 15px;
+    }
+
+    @media (min-width: 768px) {
+      h1 {
+        font-size: 2.8em;
+        margin-bottom: 40px;
+      }
+    }
+
+    @keyframes glow {
+      from {
+        text-shadow: 0 0 5px #00f2fe, 0 0 10px #00f2fe;
+      }
+      to {
+        text-shadow: 0 0 10px #4facfe, 0 0 20px #4facfe;
+      }
+    }
+    
+    input[type="file"] {
+      width: calc(100% - 40px);
+      max-width: 400px;
+      margin: 15px auto;
+      display: block;
+      padding: 15px;
+      border: 3px dashed #4facfe;
+      border-radius: 15px;
+      background: rgba(255,255,255,0.08);
+      transition: all 0.4s ease;
+      cursor: pointer;
+      position: relative;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    @media (min-width: 768px) {
+      input[type="file"] {
+        padding: 20px;
+        margin: 20px auto;
+      }
+    }
+    
+    input[type="file"]:hover {
+      border-color: #00f2fe;
+      background: rgba(255,255,255,0.15);
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 8px 25px rgba(79,172,254,0.3);
+    }
+
+    input[type="file"]::file-selector-button {
+      background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-right: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(79,172,254,0.4);
+      font-size: 0.9em;
+    }
+
+    @media (min-width: 768px) {
+      input[type="file"]::file-selector-button {
+        padding: 12px 24px;
+        margin-right: 15px;
+        font-size: 1em;
+      }
+    }
+
+    input[type="file"]::file-selector-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79,172,254,0.6);
+    }
+    
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 12px 30px;
+      background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+      border: none;
+      border-radius: 30px;
+      color: white;
+      font-weight: bold;
+      font-size: 1em;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      box-shadow: 0 4px 15px rgba(79,172,254,0.4);
+      position: relative;
+      overflow: hidden;
+      width: calc(100% - 40px);
+      max-width: 300px;
+    }
+
+    @media (min-width: 768px) {
+      button {
+        padding: 15px 40px;
+        margin: 25px auto;
+        font-size: 1.1em;
+        width: auto;
+      }
+    }
+    
+    button:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 8px 25px rgba(79,172,254,0.6);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: rgba(255,255,255,0.1);
+      transform: rotate(45deg);
+      transition: all 0.6s ease;
+      opacity: 0;
+    }
+
+    button:hover::after {
+      opacity: 1;
+      transform: rotate(45deg) translateX(50%);
+    }
+    
+    #files-list {
+      width: calc(100% - 30px);
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      list-style: none;
+    }
+
+    @media (min-width: 768px) {
+      #files-list {
+        padding: 25px;
+        margin: 40px auto;
+      }
+    }
+    
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 10px 0;
+      padding: 15px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      transition: all 0.4s ease;
+      border-left: 4px solid #4facfe;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    @media (min-width: 768px) {
+      .file-item {
+        flex-direction: row;
+        padding: 20px;
+        margin: 15px 0;
+      }
+    }
+    
+    .file-item:hover {
+      background: rgba(255,255,255,0.1);
+      transform: translateX(5px) scale(1.02);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .file-item span {
+      word-break: break-all;
+      text-align: center;
+    }
+
+    @media (min-width: 768px) {
+      .file-item span {
+        text-align: left;
+      }
+    }
+    
+    .file-item a, .file-item button {
+      color: #4facfe;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 20px;
+      border-radius: 20px;
+      background: rgba(79,172,254,0.1);
+      transition: all 0.3s ease;
+      text-align: center;
+      width: 100%;
+    }
+
+    @media (min-width: 768px) {
+      .file-item a, .file-item button {
+        width: auto;
+        margin-left: 20px;
+      }
+    }
+    
+    .file-item a:hover, .file-item button:hover {
+      color: #ffffff;
+      background: #4facfe;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(79,172,254,0.3);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    @media (min-width: 768px) {
+      .actions {
+        flex-wrap: nowrap;
+      }
+    }
+
+    /* Styles pour la barre de navigation */
+    .navbar {
+      display: flex;
+      justify-content: space-around;
+      background-color: #2d3436;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+
+    .navbar a {
+      color: #ffffff;
+      text-decoration: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      transition: background 0.3s;
+    }
+
+    .navbar a:hover {
+      background-color: #4facfe;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      cursor: pointer;
+      color: #ffffff;
+      transition: background 0.3s;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <button class="theme-toggle" id="themeToggle">Changer de thème</button>
+
+  <h1>Transfert de Fichiers dans le Réseau Local</h1>
+  
+  <h2 id="upload">Envoyer un fichier</h2>
+  <form id="uploadForm">
+    <input type="file" id="fileInput" name="file" required />
+    <button type="submit">Envoyer</button>
+  </form>
+
+  <h2 id="files">Fichiers reçus</h2>
+  <ul id="files-list"></ul>
+
+  <h2 id="history">Historique des fichiers</h2>
+  <ul id="file-history-list"></ul>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    // Gestion du changement de thème
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('light-theme');
+      document.body.classList.toggle('dark-theme');
+
+      // Changer le texte du bouton en fonction du thème
+      if (document.body.classList.contains('light-theme')) {
+        themeToggle.textContent = 'Passer au thème sombre';
+      } else {
+        themeToggle.textContent = 'Passer au thème clair';
+      }
+    });
+
+    // Formulaire d'upload
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const fileInput = document.getElementById('fileInput');
+      if (!fileInput.files.length) {
+        alert('Veuillez sélectionner un fichier');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.success) {
+          socket.emit('fileTransfer', data);
+          alert('Fichier envoyé avec succès');
+          addFileToList(data.originalName, data.filePath);
+          fileInput.value = ''; // Réinitialiser l'input file
+        }
+      } catch (error) {
+        console.error('Erreur lors du transfert du fichier:', error);
+        alert('Erreur lors du transfert du fichier');
+      }
+    });
+
+    // Fonction pour récupérer et afficher les fichiers
+    async function fetchFiles() {
+      try {
+        const response = await fetch('/files');
+        if (!response.ok) {
+          throw new Error('Erreur lors de la récupération des fichiers');
+        }
+        const files = await response.json();
+        const fileListContainer = document.getElementById('fileListContainer');
+        fileListContainer.innerHTML = ''; // Réinitialiser la liste
+
+        files.forEach(file => {
+          const listItem = document.createElement('li');
+          listItem.textContent = file;
+
+          // Bouton d'impression
+          const printButton = document.createElement('button');
+          printButton.textContent = 'Imprimer';
+          printButton.onclick = () => {
+            printFile(file);
+          };
+
+          listItem.appendChild(printButton);
+          fileListContainer.appendChild(listItem);
+        });
+      } catch (error) {
+        console.error(error);
+        alert('Erreur lors de la récupération des fichiers');
+      }
+    }
+
+    // Fonction pour imprimer un fichier
+    async function printFile(fileName) {
+      try {
+        const response = await fetch('/print', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ filePath: fileName }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          alert('Impression en cours...');
+        } else {
+          alert('Erreur lors de l\'impression: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Erreur lors de l\'impression:', error);
+        alert('Erreur lors de l\'impression');
+      }
+    }
+
+    // Ajouter le fichier à la liste des fichiers reçus
+    function addFileToList(originalName, filePath) {
+      const list = document.getElementById('files-list');
+      const listItem = document.createElement('li');
+      listItem.className = 'file-item';
+      
+      const fileNameSpan = document.createElement('span');
+      fileNameSpan.textContent = originalName;
+      
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'actions';
+
+      const downloadLink = document.createElement('a');
+      downloadLink.href = `/download/${filePath}`;
+      downloadLink.textContent = 'Télécharger';
+      downloadLink.download = originalName;
+      
+      const printButton = document.createElement('button');
+      printButton.textContent = 'Imprimer';
+      printButton.onclick = () => printFile(filePath);
+      
+      actionsDiv.appendChild(downloadLink);
+      actionsDiv.appendChild(printButton);
+      
+      listItem.appendChild(fileNameSpan);
+      listItem.appendChild(actionsDiv);
+      list.appendChild(listItem);
+    }
+
+    // Ajouter l'historique des fichiers à la liste
+    async function loadFileHistory() {
+      try {
+        const response = await fetch('/file-history');
+        const history = await response.json();
+        const historyList = document.getElementById('file-history-list');
+        historyList.innerHTML = ''; // Réinitialiser la liste
+
+        history.forEach(file => {
+          const historyItem = document.createElement('li');
+          historyItem.textContent = `${file.originalName} - Uploadé par ${file.uploadedBy} le ${new Date(file.timestamp).toLocaleString()}`;
+          historyList.appendChild(historyItem);
+        });
+      } catch (error) {
+        console.error('Erreur lors du chargement de l\'historique des fichiers:', error);
+      }
+    }
+
+    // Charger l'historique des fichiers au chargement de la page
+    window.onload = loadFileHistory;
+
+    // Réception de notifications de transfert de fichiers
+    socket.on('fileTransfer', function(fileInfo) {
+      addFileToList(fileInfo.originalName, fileInfo.filePath);
+    });
+
+    // Vérifier la connexion socket
+    socket.on('connect', () => {
+      console.log('Connecté au serveur WebSocket');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Erreur de connexion WebSocket:', error);
+    });
+  </script>
+</body>
+</html>
